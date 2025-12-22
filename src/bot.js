@@ -9,10 +9,15 @@ class KinBot {
         this.browser = null;
         this.page = null;
         this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+        this.historyPath = './data/history.json';
+        this.answeredQuestions = new Set();
     }
 
     async initialize() {
         console.log('봇을 초기화합니다...');
+
+        await this.loadHistory();
+
         // 브라우저 실행
         this.browser = await puppeteer.launch({
             headless: process.env.HEADLESS === 'true',
@@ -24,6 +29,48 @@ class KinBot {
 
         this.page = await this.browser.newPage();
         console.log('브라우저가 실행되었습니다.');
+    }
+
+    getDocId(urlOrId) {
+        try {
+            // 이미 숫자(ID) 형식이면 그대로 반환
+            if (/^\d+$/.test(urlOrId)) {
+                return urlOrId;
+            }
+            const urlObj = new URL(urlOrId);
+            return urlObj.searchParams.get('docId');
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async loadHistory() {
+        try {
+            if (await fs.pathExists(this.historyPath)) {
+                const data = await fs.readJson(this.historyPath);
+                // URL이 저장되어 있어도 docId만 추출해서 Set에 저장
+                this.answeredQuestions = new Set(
+                    data.map(url => this.getDocId(url)).filter(id => id !== null)
+                );
+                console.log(`기존 답변 기록을 불러왔습니다. (${this.answeredQuestions.size}개)`);
+            } else {
+                console.log('새로운 답변 기록 파일을 생성합니다.');
+                this.answeredQuestions = new Set();
+                await fs.outputJson(this.historyPath, []);
+            }
+        } catch (error) {
+            console.error('히스토리 로드 실패:', error);
+        }
+    }
+
+    async saveHistory() {
+        try {
+            await fs.ensureFile(this.historyPath);
+            await fs.writeJson(this.historyPath, Array.from(this.answeredQuestions));
+            console.log('답변 기록이 저장되었습니다.');
+        } catch (error) {
+            console.error('히스토리 저장 실패:', error);
+        }
     }
 
     async login() {
@@ -136,6 +183,13 @@ class KinBot {
                 // 이미 답변된 질문은 스킵
                 if (q.isAnswered) continue;
 
+                // 이미 내가 답변한 기록이 있는 경우 스킵
+                const docId = this.getDocId(q.link);
+                if (docId && this.answeredQuestions.has(docId)) {
+                    console.log(`[Skip] 이미 답변한 질문입니다: ${q.title}`);
+                    continue;
+                }
+
                 // 키워드 포함 여부 2차 검증
                 if (!q.title.includes(keyword) && !q.title.replace(/\s/g, '').includes(keyword.replace(/\s/g, ''))) {
                     continue;
@@ -189,7 +243,14 @@ class KinBot {
 
             if (answer) {
                 console.log('답변 생성 완료. 등록 절차를 진행합니다.');
-                await this.postAnswer(newPage, answer);
+                const posted = await this.postAnswer(newPage, answer, project);
+                if (posted) {
+                    const docId = this.getDocId(link);
+                    if (docId) {
+                        this.answeredQuestions.add(docId);
+                        await this.saveHistory();
+                    }
+                }
                 // console.log(`[TEST MODE] 생성된 답변:\n${answer}`);
             }
 
@@ -203,33 +264,80 @@ class KinBot {
     async generateAnswer(question, project) {
         try {
             const model = this.genAI.getGenerativeModel({ model: config.aiModel });
+            let prompt;
 
-            const prompt = `
-당신은 지식인에서 활동하는 친절하고 경험 많은 전문가입니다.
+            if (project.name === "보통은.") {
+                prompt = `
+당신은 '밸런스 게임 마스터'입니다. 
+사용자의 질문이 "A vs B" 형태의 밸런스 게임이라면, **둘 중 하나를 확실하게 선택**하고 그 이유를 재치있고 공감가게 설명해주세요.
+그리고 답변 마지막에 자연스럽게 "보통은." 사이트에서 다른 사람들의 투표 결과도 확인해보라고 추천해주세요.
+
+[질문]
+"${question}"
+
+[사이트 정보]
+- 이름: 보통은.
+- 설명: 다양한 주제(연애, 사회생활 등)의 밸런스 게임 모음. 로그인 없이 익명 투표 가능. 질문 제보 가능.
+- 링크: ${project.link}
+
+[작성 가이드]
+1. **선택과 집중**: 질문이 밸런스 게임(A vs B)이라면, 애매하게 답하지 말고 **딱 하나를 골라주세요.**
+2. **이유 설명**: 그 선택을 한 이유를 친구에게 말하듯 편안하고 재밌게(또는 진지하게) 설명해주세요.
+   - 예: "짝사랑 5년이라니... 그건 희망고문이잖아요 ㅠㅠ 차라리 환승연애가 낫죠. 한 번 아프고 끝내는 게..."
+3. **자연스러운 추천**: 이유 설명 후, "제 생각은 이런데 남들은 어떻게 생각하는지 통계로 확인해보세요" 라는 식으로 사이트를 소개하세요.
+4. **가독성**: 문단 사이에는 반드시 빈 줄을 넣으세요.
+5. **금지**: "답변:" 같은 접두어, 링크 직접 삽입(링크는 코드에서 자동 추가됨), 마크다운 사용 금지.
+
+답변:
+`;
+            } else if (project.answerTemplate) {
+                prompt = `
+당신은 '단어 치환 AI'입니다. 
+아래 [템플릿]의 내용에서 **{context}** 라는 글자를 찾아서, 사용자의 [질문]에 맞는 구체적인 상황(지역, 음식, 목적)으로 바꿔서 출력하세요.
+
+[질문]
+"${question}"
+
+[템플릿]
+${project.answerTemplate}
+
+[규칙]
+1. **{context}** 를 질문에 맞는 단어(예: 강릉, 데이트, 회식 등)로 무조건 변경해야 합니다. 그대로 두지 마세요.
+2. {context}를 제외한 나머지 모든 문장, 조사, 줄바꿈은 템플릿과 100% 똑같이 유지하세요.
+3. 절대 사족(인사말 추가, 설명)을 붙이지 말고 치환된 결과 텍스트만 출력하세요.
+
+답변:
+`;
+            } else {
+                prompt = `
+당신은 지식인에서 활동하는 친절하고 경험 많은 답변자입니다.
 사용자의 다음 질문에 대해 한국어로 정말 도움이 되는 답변을 작성해주세요.
-답변의 마지막 부분이나 문맥상 자연스러운 위치에 아래 프로젝트를 추천해주세요.
-단, 너무 노골적인 광고처럼 보이지 않게, "제가 써봤는데 좋았다"거나 "이런 것도 도움이 될 수 있다"는 식으로 자연스럽게 언급하세요.
+답변 후반부에 자연스럽게 아래 프로젝트를 추천해주세요.
+단, "광고입니다" 같은 느낌을 주지 말고, "제가 직접 써봤는데 편했다", "요즘은 이런 것도 많이 쓰더라"와 같이 실제 사용 경험처럼 자연스럽게 언급하세요.
 
 [추천할 프로젝트 정보]
 - 이름: ${project.name}
 - 설명: ${project.description}
 - 홍보 멘트: ${project.promotionText}
-- 필수 포함 링크: ${project.link}
 
 [질문 내용]
 "${question}"
 
 [답변 가이드라인]
-1. 질문자의 궁금증을 먼저 확실하게 해결해주세요.
-2. 답변은 친절하고 정중한 어조(해요체)를 사용하세요.
-3. **답변 본문 중간에는 절대 링크를 넣지 마세요.**
-4. 전체 길이는 300~500자 내외로 작성하세요.
-5. **절대 마크다운(**볼드**, *이탤릭*)을 사용하지 마세요.**
-6. 답변의 **맨 마지막 줄**에 아래 링크를 그대로 붙여주세요 (설명 없이 URL만).
+1. [중요] 당신은 질문자가 아닙니다. 질문을 반복하거나 "추천해주세요"라고 묻지 마세요. 당신은 이미 답을 알고 있는 사람으로서 정보를 **제공**해야 합니다.
+2. 서두: 질문자의 상황에 깊이 공감해주세요. ("~하시군요!", "저도 그 맘 알죠 ㅠㅠ")
+3. 본문: 질문에 대한 실질적인 조언이나 해결책을 먼저 제시하세요.
+4. 추천: 그 후에 자연스럽게 "참, 제가 써보니까 이게 진짜 도움되더라고요"라며 프로젝트를 소개하세요. 절대 광고처럼 보이지 않게 "저도 알게 된 건데~" 식으로 부드럽게 넘어가세요.
+5. 말투: 인터넷 커뮤니티나 맘카페 댓글처럼 **아주 자연스럽고 친절한 구어체(해요체)**를 사용하세요. (이모티콘 적절히 사용)
+6. 각 문단 사이에는 반드시 빈 줄을 하나씩 추가하세요. (가독성 필수)
+7. 금지: "더 궁금한 점...", "채택...", URL 본문 삽입, 마크다운 사용 금지.
+8. 답변의 맨 마지막 줄에만 아래 링크를 남기세요. (본문 중복 금지)
    ${project.link}
 
 답변:
 `;
+            }
+
             const result = await model.generateContent(prompt);
             const response = await result.response;
             return response.text();
@@ -239,19 +347,36 @@ class KinBot {
         }
     }
 
-    async postAnswer(page, answer) {
+    async postAnswer(page, answer, project) {
         try {
             console.log('답변 작성란 진입 시도...');
 
             // 0. 마크다운 및 링크 포맷 정리
-            // [Link](Url) -> Link: Url 형식을 변환하되, 텍스트와 URL이 같으면 URL만 남김
             let cleanAnswer = answer.replace(/\*\*/g, '').replace(/__/g, '').replace(/^#+\s/gm, '');
-            // 마크다운 링크 변환 로직 개선
+
+            // [강제 필터링] 금지된 멘트 삭제
+            cleanAnswer = cleanAnswer.replace(/더 궁금한 점이 있으신가요\??|채택 부탁드립니다\.?|도움이 되셨나요\??/g, '');
+
+            // [강제 포맷팅] 문단 간격 넓히기 (네이버 에디터 가독성)
+            // \n을 \n\n으로 치환하되, 이미 \n\n인 경우는 유지
+            cleanAnswer = cleanAnswer.split('\n').filter(line => line.trim() !== '').join('\n\n');
+
+            // [링크 재배치] 본문 중간에 있을 수 있는 링크를 제거하고 맨 뒤에 강제로 붙임
+            // 1. 기존 링크 제거 (중복 방지)
+            cleanAnswer = cleanAnswer.split(project.link).join('');
+
+            // 2. 끝 부분 공백 정리
+            cleanAnswer = cleanAnswer.trim();
+
+            // 3. 줄바꿈 확보 후 링크 추가 (앞뒤로 줄바꿈이 있어야 에디터에서 링크 활성화됨)
+            cleanAnswer += `\n\n${project.link}\n`;
+
+            // 마크다운 링크 변환 (혹시 남아있다면)
             cleanAnswer = cleanAnswer.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
                 if (text.trim() === url.trim() || text.includes('http')) {
-                    return url; // 텍스트가 URL이거나 중복되면 URL만 반환
+                    return url;
                 }
-                return `${text}: ${url}`; // 다르면 "텍스트: URL" 반환
+                return `${text}: ${url}`;
             });
 
             // 1. 답변하기 버튼 찾기 및 클릭 (스크린샷 클래스 기반 강제 클릭)
@@ -399,16 +524,46 @@ class KinBot {
                     await page.keyboard.press('A');
                     await page.keyboard.up('Control');
                     await page.keyboard.press('Backspace');
-                    await new Promise(r => setTimeout(r, 200));
+                    await new Promise(r => setTimeout(r, 500)); // 지우고 잠시 대기 (중요)
 
                     console.log('--------------------------------------------------');
                     console.log('[생성된 답변 전문]');
                     console.log(cleanAnswer);
                     console.log('--------------------------------------------------');
 
-                    // 타이핑
-                    console.log('답변 타이핑 시작...');
-                    await page.keyboard.type(cleanAnswer, { delay: 10 });
+                    console.log('답변 안전 타이핑(Line-by-Line) 시도...');
+
+                    // [이전 방식 롤백 및 개선]
+                    // 한 번에 type()을 호출하면 에디터가 속도를 못 따라가서 글자가 씹힘.
+                    // 따라서 줄 단위로 끊어서 타이핑하고, 엔터 처리 후 잠시 대기하는 방식으로 안정성 확보.
+
+                    await inputElement.focus();
+
+                    const lines = cleanAnswer.split('\n');
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i];
+                        if (line) {
+                            // 줄 내용 타이핑 (속도를 15 -> 30ms로 약간 늦춤)
+                            await page.keyboard.type(line, { delay: 30 });
+                        }
+
+                        // 마지막 줄이 아니면 엔터 입력
+                        if (i < lines.length - 1) {
+                            await page.keyboard.press('Enter');
+                            // [중요] 엔터 후 에디터가 줄바꿈 처리할 시간을 줌 (씹힘 방지 핵심)
+                            await new Promise(r => setTimeout(r, 200));
+                        }
+                    }
+
+                    console.log('답변 타이핑 완료.');
+                    await new Promise(r => setTimeout(r, 500)); // 렌더링 대기
+
+                    // [링크 활성화 트리거]
+                    // 타이핑 방식이므로 자연스럽게 활성화되겠지만, 확실하게 하기 위해 스페이스+백스페이스
+                    await page.keyboard.press('Space');
+                    await new Promise(r => setTimeout(r, 100));
+                    await page.keyboard.press('Backspace');
+
                 } else {
                     throw new Error("입력 가능한 요소를 찾지 못했습니다.");
                 }
@@ -483,15 +638,16 @@ class KinBot {
 
                 console.log('등록 요청을 보냈습니다. 5초 대기...');
                 await new Promise(r => setTimeout(r, 5000));
-                // (이전 코드에서 try가 이미 닫혔으므로, 여기서는 단순히 로그 출력 후 종료)
-                // 만약 전체 로직을 감싸는 try가 필요하다면 상위 레벨에서 처리되거나,
-                // 현재 구조상으로는 이미 내부 try/catch로 처리되었으므로 추가적인 catch가 불필요함.
+
+                return true;
             } else {
                 console.log('취소되었습니다.');
+                return false;
             }
 
         } catch (error) {
             console.error('답변 등록 프로세스 오류:', error);
+            return false;
         }
     }
 }
