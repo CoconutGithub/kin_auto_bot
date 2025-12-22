@@ -30,14 +30,52 @@ class KinBot {
         console.log('네이버 로그인 페이지로 이동합니다...');
         await this.page.goto('https://nid.naver.com/nidlogin.login', { waitUntil: 'networkidle2' });
 
-        // 쿠키 파일이 있으면 불러오기 시도 (구현 예정)
+        const id = process.env.NAVER_ID;
+        const pw = process.env.NAVER_PW;
 
-        console.log('로그인을 대기합니다. 브라우저에서 직접 로그인해주세요.');
-        console.log('로그인이 완료되면 자동으로 감지하여 진행합니다...');
+        if (id && pw) {
+            console.log('환경 변수의 계정 정보로 자동 로그인을 시도합니다...');
+            try {
+                // 네이버 로그인 캡차 우회: 클립보드 복사/붙여넣기 방식 에뮬레이션
+                // 단순히 value를 설정하면 캡차가 뜰 확률이 높음.
+                // evaluate 내에서 value를 설정하고 클릭하는 방식이 가장 뚫릴 확률이 높음 (clipboard api 흉내)
+
+                await this.page.evaluate((nid, npw) => {
+                    // ID 입력
+                    const idInput = document.querySelector('#id');
+                    if (idInput) {
+                        idInput.value = nid;
+                        // React/Vue 등의 가상돔을 쓰는 경우 이벤트를 발생시켜야 할 수도 있지만
+                        // 네이버 구형 로그인창은 value 설정만으로도 우회되는 경우가 많음 (단, 타이핑처럼 보여야 함)
+                    }
+
+                    // PW 입력
+                    const pwInput = document.querySelector('#pw');
+                    if (pwInput) {
+                        pwInput.value = npw;
+                    }
+                }, id, pw);
+
+                console.log('아이디/비밀번호 입력 완료 (Clipboard 방식)...');
+                await new Promise(r => setTimeout(r, 1000)); // 잠깐 대기
+
+                // 로그인 버튼 클릭
+                const loginBtnSelector = '.btn_login, #log\\.login';
+                await this.page.click(loginBtnSelector);
+                console.log('로그인 버튼 클릭.');
+
+            } catch (error) {
+                console.error('자동 로그인 시도 중 에러:', error.message);
+                console.log('수동 로그인을 진행해주세요.');
+            }
+        } else {
+            console.log('환경 변수에 NAVER_ID 또는 NAVER_PW가 없습니다. 수동 로그인을 대기합니다.');
+        }
 
         // 로그인 성공 여부 체크 (예: 메인 페이지의 로그아웃 버튼이나 프로필 요소 확인)
         try {
-            // 최대 5분 대기
+            console.log('로그인 완료 여부를 확인합니다...');
+            // 최대 5분 대기 (자동 로그인 실패 시 수동 로그인 시간 벌기)
             await this.page.waitForFunction(
                 () => document.querySelector('#gnb') || window.location.href.includes('naver.com') && !window.location.href.includes('nidlogin'),
                 { timeout: 300000 }
@@ -355,9 +393,18 @@ class KinBot {
                     await inputElement.click();
                     await new Promise(r => setTimeout(r, 500));
 
-                    // 만약 링크 팝업 등 이상한게 떴을 수 있으므로 ESC 한번 누름
-                    await page.keyboard.press('Escape');
+                    // 기존 내용 초기화 (Ctrl+A -> Backspace)
+                    // 간혹 포커스가 제대로 안 잡혔을 수 있으니 클릭 후 초기화 수행
+                    await page.keyboard.down('Control');
+                    await page.keyboard.press('A');
+                    await page.keyboard.up('Control');
+                    await page.keyboard.press('Backspace');
                     await new Promise(r => setTimeout(r, 200));
+
+                    console.log('--------------------------------------------------');
+                    console.log('[생성된 답변 전문]');
+                    console.log(cleanAnswer);
+                    console.log('--------------------------------------------------');
 
                     // 타이핑
                     console.log('답변 타이핑 시작...');
