@@ -683,8 +683,8 @@ ${project.answerTemplate}
                     }
                 }
 
-                console.log('등록 요청을 보냈습니다. 5초 대기...');
-                await new Promise(r => setTimeout(r, 5000));
+                console.log('등록 요청을 보냈습니다. 10초 대기...');
+                await new Promise(r => setTimeout(r, 10000));
 
                 return true;
             } else {
