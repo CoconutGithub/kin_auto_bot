@@ -448,28 +448,44 @@ class KinBot {
             if (userApproved) {
                 console.log('사용자 승인 완료. 등록 버튼 클릭...');
 
-                // 등록 버튼: 텍스트 "답변등록" 포함된 버튼 찾기
+                // 등록 버튼: ID 기반으로 확실하게 찾기 (#answerRegisterButton)
                 try {
-                    const registerButtons = await page.$x("//*[contains(text(), '답변등록')]");
-                    let regClicked = false;
-                    for (const btn of registerButtons) {
-                        if (await btn.boundingBox()) {
-                            await btn.click();
-                            regClicked = true;
-                            break;
-                        }
-                    }
-                    if (!regClicked) {
-                        // fallback
-                        const btn = await page.$('.endAnswerRegisterButton, #answerRegisterButton');
-                        if (btn) await btn.click();
-                    }
+                    console.log("최종 등록 버튼(#answerRegisterButton) 찾는 중...");
+                    const submitBtnSelector = '#answerRegisterButton';
+                    await page.waitForSelector(submitBtnSelector, { timeout: 3000 });
 
-                    console.log('등록 요청을 보냈습니다. 5초 대기...');
-                    await new Promise(r => setTimeout(r, 5000));
+                    // JS 강제 클릭 (가장 확실함)
+                    await page.evaluate((sel) => {
+                        const btn = document.querySelector(sel);
+                        if (btn) btn.click();
+                    }, submitBtnSelector);
+
+                    console.log('등록 버튼 클릭 실행됨(JS).');
                 } catch (e) {
-                    console.error('등록 버튼 클릭 실패:', e);
+                    console.error("ID로 등록 버튼 찾기 실패, Fallback 시도...", e.message);
+
+                    // Fallback: 텍스트 기반 검색
+                    try {
+                        await page.evaluate(() => {
+                            const btns = document.querySelectorAll('button, a');
+                            for (const b of btns) {
+                                if (b.innerText.includes('답변등록')) {
+                                    b.click();
+                                    return;
+                                }
+                            }
+                        });
+                        console.log('텍스트 기반 버튼 클릭 시도 완료.');
+                    } catch (e2) {
+                        console.error("등록 버튼 클릭 최종 실패:", e2.message);
+                    }
                 }
+
+                console.log('등록 요청을 보냈습니다. 5초 대기...');
+                await new Promise(r => setTimeout(r, 5000));
+                // (이전 코드에서 try가 이미 닫혔으므로, 여기서는 단순히 로그 출력 후 종료)
+                // 만약 전체 로직을 감싸는 try가 필요하다면 상위 레벨에서 처리되거나,
+                // 현재 구조상으로는 이미 내부 try/catch로 처리되었으므로 추가적인 catch가 불필요함.
             } else {
                 console.log('취소되었습니다.');
             }
