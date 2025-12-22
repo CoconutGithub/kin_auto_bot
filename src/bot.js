@@ -159,8 +159,8 @@ class KinBot {
     }
 
     async searchAndProcess(keyword, project) {
-        // 네이버 지식인 검색 URL (최신순 정렬)
-        const searchUrl = `https://kin.naver.com/search/list.naver?query=${encodeURIComponent(keyword)}&sort=date`;
+        // 네이버 지식인 검색 URL (최신순 정렬, 정확도 향상을 위해 따옴표로 감싸서 검색)
+        const searchUrl = `https://kin.naver.com/search/list.naver?query=${encodeURIComponent('"' + keyword + '"')}&sort=date`;
 
         try {
             await this.page.goto(searchUrl, { waitUntil: 'domcontentloaded' });
@@ -232,6 +232,33 @@ class KinBot {
 
             if (content.length < 10) {
                 console.log('내용이 너무 짧거나 추출되지 않아 건너뜁니다.');
+                await newPage.close();
+                return;
+            }
+
+            // [추가] 답변 생성 전 사용자 승인 요청 (토큰 절약)
+            const readline = require('readline').createInterface({
+                input: process.stdin,
+                output: process.stdout
+            });
+
+            const userConfirmed = await new Promise(resolve => {
+                readline.question('이 질문에 답변을 생성하시겠습니까? (y/n): ', (ans) => {
+                    readline.close();
+                    resolve(ans.toLowerCase() === 'y');
+                });
+            });
+
+            if (!userConfirmed) {
+                console.log('사용자가 답변 생성을 취소했습니다. 이 질문은 히스토리에 저장되어 다음 검색 시 스킵됩니다.');
+
+                // [추가] 취소한 질문도 히스토리에 추가하여 다음 검색 시 스킵
+                const docId = this.getDocId(link);
+                if (docId) {
+                    this.answeredQuestions.add(docId);
+                    await this.saveHistory();
+                }
+
                 await newPage.close();
                 return;
             }
