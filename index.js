@@ -17,9 +17,10 @@ async function main() {
         await bot.login();
 
         // 모니터링 시작
-        console.log(`모니터링 키워드: ${config.keywords.join(', ')}`);
-        if (config.keywords.length === 0) {
-            console.warn('경고: 설정된 키워드가 없습니다. config/settings.js를 확인해주세요.');
+        if (config.projects && config.projects.length > 0) {
+            console.log(`프로젝트별 모니터링을 시작합니다. (${config.projects.length}개 프로젝트)`);
+        } else {
+            console.warn('경고: 설정된 프로젝트가 없습니다. config/settings.js를 확인해주세요.');
         }
 
         await bot.monitor();
