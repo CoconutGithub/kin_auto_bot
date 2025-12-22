@@ -160,7 +160,7 @@ class KinBot {
 
     async searchAndProcess(keyword, project) {
         // 네이버 지식인 검색 URL (최신순 정렬, 정확도 향상을 위해 따옴표로 감싸서 검색)
-        const searchUrl = `https://kin.naver.com/search/list.naver?query=${encodeURIComponent('"' + keyword + '"')}&sort=date`;
+        const searchUrl = `https://kin.naver.com/search/list.naver?query=${encodeURIComponent('"' + keyword + '"')}&section=qna&sort=date`;
 
         try {
             await this.page.goto(searchUrl, { waitUntil: 'domcontentloaded' });
