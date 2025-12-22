@@ -365,9 +365,29 @@ ${project.answerTemplate}
 `;
             }
 
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            return response.text();
+            // [추가] 재시도 로직 (503 Overloaded 에러 대응)
+            const maxRetries = 3;
+            let retryCount = 0;
+
+            while (retryCount < maxRetries) {
+                try {
+                    const result = await model.generateContent(prompt);
+                    const response = await result.response;
+                    return response.text();
+                } catch (apiError) {
+                    if (apiError.msg && apiError.msg.includes('503') || apiError.message && apiError.message.includes('503')) {
+                        retryCount++;
+                        console.warn(`AI 모델 과부하(503) 감지... 재시도 중 (${retryCount}/${maxRetries})`);
+                        // 지수 백오프: 2초, 4초, 8초 대기
+                        await new Promise(r => setTimeout(r, 2000 * Math.pow(2, retryCount - 1)));
+                    } else {
+                        // 503이 아닌 다른 에러는 즉시 throw하여 아래 catch 블록으로 이동
+                        throw apiError;
+                    }
+                }
+            }
+
+            throw new Error(`AI 모델 과부하가 지속되어 ${maxRetries}회 재시도 실패함.`);
         } catch (error) {
             console.error('AI 답변 생성 실패:', error);
             return null;
