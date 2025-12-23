@@ -44,6 +44,34 @@ class KinBot {
         }
     }
 
+    // [추가] 날짜가 최근 30일 이내인지 확인하는 헬퍼 메서드
+    isRecent(dateString) {
+        // 상대적 시간 표현은 무조건 최근으로 간주
+        if (dateString.includes('전') || dateString.includes('어제')) {
+            return true;
+        }
+
+        // YYYY.MM.DD. 형식 파싱
+        // 예: 2025.11.11. -> 점 제거 후 new Date
+        try {
+            const cleanDate = dateString.replace(/\.$/, ''); // 마지막 점 제거
+            const date = new Date(cleanDate);
+
+            // 날짜 파싱 실패 시 안전하게 스킵하지 않음 (혹은 최근으로 간주할지 정책 결정 필요하나 현재는 최근으로 간주 or false)
+            // 여기서는 형식이 안 맞으면 false 처리 (안전)
+            if (isNaN(date.getTime())) return false;
+
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+            return diffDays <= 15;
+        } catch (e) {
+            console.error(`날짜 파싱 에러 (${dateString}):`, e);
+            return false;
+        }
+    }
+
     async loadHistory() {
         try {
             if (await fs.pathExists(this.historyPath)) {
@@ -175,13 +203,35 @@ class KinBot {
                     const date = item.querySelector('.txt_inline').innerText;
                     const isAnswered = item.querySelector('.icon_b1'); // 답변 완료 아이콘 확인
 
-                    return { link, title, date, isAnswered: !!isAnswered };
+                    // [추가] 본문 미리보기 추출 (제목 아래 dd 태그 중 날짜/태그 제외한 것)
+                    // 보통 구조: dt(제목) -> dd(날짜) -> dd(본문) -> dd(태그)
+                    // 날짜: .txt_inline, 태그: .tag_area
+                    const dds = item.querySelectorAll('dd');
+                    let preview = '';
+                    for (const dd of dds) {
+                        if (!dd.classList.contains('txt_inline') && !dd.classList.contains('tag_area') && !dd.classList.contains('txt_block')) {
+                            preview = dd.innerText;
+                            break;
+                        }
+                    }
+
+                    // [추가] 태그 추출
+                    const tagArea = item.querySelector('.tag_area');
+                    const tags = tagArea ? tagArea.innerText : '';
+
+                    return { link, title, date, isAnswered: !!isAnswered, preview, tags };
                 });
             });
 
             for (const q of questions) {
                 // 이미 답변된 질문은 스킵
                 if (q.isAnswered) continue;
+
+                // [추가] 날짜 필터링 (최근 30일 이내만 처리)
+                if (!this.isRecent(q.date)) {
+                    console.log(`[Skip] 오래된 질문입니다: ${q.title} (${q.date})`);
+                    continue;
+                }
 
                 // 이미 내가 답변한 기록이 있는 경우 스킵
                 const docId = this.getDocId(q.link);
@@ -190,8 +240,18 @@ class KinBot {
                     continue;
                 }
 
-                // 키워드 포함 여부 2차 검증
-                if (!q.title.includes(keyword) && !q.title.replace(/\s/g, '').includes(keyword.replace(/\s/g, ''))) {
+                // 키워드 포함 여부 2차 검증 (제목 + 본문 미리보기 + 태그)
+                // 공백 제거 후 비교 (띄어쓰기 달라도 매칭되도록)
+                const cleanKeyword = keyword.replace(/\s/g, '');
+                const cleanTitle = q.title.replace(/\s/g, '');
+                const cleanPreview = (q.preview || '').replace(/\s/g, '');
+                const cleanTags = (q.tags || '').replace(/\s/g, '');
+
+                const isMatched = cleanTitle.includes(cleanKeyword) ||
+                    cleanPreview.includes(cleanKeyword) ||
+                    cleanTags.includes(cleanKeyword);
+
+                if (!isMatched) {
                     continue;
                 }
 
