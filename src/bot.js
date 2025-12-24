@@ -156,6 +156,26 @@ class KinBot {
                 { timeout: 300000 }
             );
             console.log('로그인이 감지되었습니다!');
+
+            // [사용자 편의 기능] 로그인된 계정의 별명 확인 및 출력
+            try {
+                // 네이버 프로필 영역에서 별명 추출 시도
+                const nickname = await this.page.evaluate(() => {
+                    const el = document.querySelector('#gnb_name .nickname') || document.querySelector('.user_name') || document.querySelector('#gnb .gnb_name');
+                    return el ? el.innerText : null;
+                });
+
+                if (nickname) {
+                    console.log(`\n================================`);
+                    console.log(`🌟 현재 로그인된 별명: [ ${nickname} ]`);
+                    console.log(`================================\n`);
+                } else {
+                    console.log("로그인된 별명을 가져오지 못했습니다. (직접 확인 필요)");
+                }
+            } catch (e) {
+                console.log("별명 확인 중 에러(무시됨):", e.message);
+            }
+
             // 로그인 후 잠시 대기
             await new Promise(r => setTimeout(r, 2000));
         } catch (e) {
