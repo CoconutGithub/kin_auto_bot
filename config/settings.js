@@ -81,7 +81,7 @@ todo리스트 작성과 로그인 시, 매일매일 얼만큼 집중하고 todo�
     searchInterval: 60 * 1000,
 
     // AI 모델 설정
-    aiModel: "gemini-2.5-flash",//gemini-3-flash-preview
+    aiModel: "gemini-3-flash-preview",//gemini-3-flash-preview, gemini-2.5-flash
 
     // 최대 답변 길이 등
     maxAnswerLength: 500,
