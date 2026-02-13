@@ -32,7 +32,7 @@ module.exports = {
             // [개선] 'ASMR', '공부 기록', '스터디 플래너' 등 연관 키워드 확장
             keywords: [
                 "공부 타이머", "백색 소음", "집중하는 법", "집중 안됨", "공부 집중", "공부법", "공부 방법",
-                "타이머 앱", "공부 일지", "뽀모도로 타이머", "todo", "투두 리스트",
+                "타이머 앱", "공부 일지", "뽀모도로 타이머", "todo", "투두 리스트","집중",
                 "ASMR", "도서관 소음", "빗소리", "공부 기록 앱", "무료 타이머", "타이머"
             ],
             // [개선] '커스텀 사이클', '히트맵(잔디)' 등 차별점 강조
@@ -75,6 +75,120 @@ todo리스트 작성과 로그인 시, 매일매일 얼만큼 집중하고 todo�
             // [개선] '로그인 없이 바로', '남들 생각' 강조
             promotionText: "심심할 때 친구들이랑 하기 좋은 밸런스 게임 사이트인데, 로그인 없이 바로 투표하고 남들 생각도 볼 수 있어서 재밌어요."
         },
+        // LabMate - Biology
+        {
+            name: "LabMate - Biology",
+            keywords: [
+                "qPCR 효율", "DNA 정량", "RNA 정량", "세포 계수", "Cell Counting", "Doubling Time", "세대 시간",
+                "Ligation Ratio", "PCR 마스터 믹스", "Tm 계산", "Melting Temperature", "단백질 분자량", "Protein MW", "생물학"
+            ],
+            description: "생물학 연구 필수 계산기 모음 (qPCR, DNA/RNA, Cell Counting 등)",
+            link: "https://labmate.kr/",
+            promotionText: "실험하다 계산 필요할 때 쓰기 좋은 사이트인데, qPCR이나 Cell Counting 같은 생물학 계산기들이 잘 정리되어 있어서 편해요."
+        },
+        // LabMate - Chemistry
+        {
+            name: "LabMate - Chemistry",
+            keywords: [
+                "몰 농도 계산", "Molarity", "희석 계산", "Dilution", "재구성 계산", "Reconstitution", "질량 몰 변환",
+                "pKa 계산", "버퍼 pH", "Henderson-Hasselbalch", "비어 람베르트", "Beer-Lambert", "반응 수율",
+                "이상 기체 법칙", "노르말 농도", "RCF RPM 변환", "밀도 계산", "반감기 계산", "분자량 계산", "삼투압 계산", "화학"
+            ],
+            description: "화학 실험 및 학습용 계산기 모음 (몰 농도, 희석, pKa, 이상기체 등)",
+            link: "https://labmate.kr/",
+            promotionText: "화학 계산할 때 복잡한 공식 일일이 찾지 말고 여기 써보세요. 몰 농도나 희석 계산 같은 거 바로바로 돼서 실험할 때 진짜 유용해요."
+        },
+        // LabMate - CS
+        {
+            name: "LabMate - CS",
+            keywords: [
+                "진수 변환", "2진수 변환", "16진수 변환", "색상 코드 변환", "RGB HEX 변환", "데이터 용량 변환",
+                "서브넷 마스크 계산", "CIDR 계산", "Unix 타임스탬프", "대역폭 계산", "저항 색띠 계산", "저항 읽는 법", "CS"
+            ],
+            description: "컴퓨터 과학 및 개발자용 도구 모음 (진수 변환, 서브넷, 데이터 단위, 색상 코드 등)",
+            link: "https://labmate.kr/",
+            promotionText: "개발하거나 공부할 때 쓰기 좋은 툴 모음이에요. 진수 변환이나 서브넷 마스크 계산 같은 거 필요할 때 즐겨찾기 해두면 편해요."
+        },
+        // LabMate - Everyday
+        {
+            name: "LabMate - Everyday",
+            keywords: [
+                "날짜 계산", "디데이 계산", "만 나이 계산", "한국 나이", "학점 계산기", "GPA 변환", "팁 계산",
+                "더치페이 계산", "세계 시간 변환", "단위 변환", "길이 변환", "무게 변환", "부피 변환", "온도 변환",
+                "유류비 계산", "기름값 계산", "전기요금 계산", "전기세 계산", "계산기", "계산"
+            ],
+            description: "실생활에 유용한 계산기 모음 (날짜, 나이, 학점, 팁, 단위 변환 등)",
+            link: "https://labmate.kr/",
+            promotionText: "일상생활에서 계산할 일 있을 때 여기 가보세요. 날짜, 학점, 단위 변환 같은 거 한곳에 모려 있어서 진짜 편해요."
+        },
+        // LabMate - Finance
+        {
+            name: "LabMate - Finance",
+            keywords: [
+                "CAGR 계산", "연평균 성장률", "ROI 계산", "투자 수익률", "복리 계산", "예적금 계산", "부가세 계산",
+                "VAT 계산", "대출 상환 계산", "월 상환액", "저축 목표", "실수령액 계산", "연봉 실수령액", "시급 계산",
+                "퇴직금 계산", "물가 상승률 계산", "화폐 가치 계산", "카드 리볼빙 계산", "손익분기점", "투자 수익", "투자", "손익"
+            ],
+            description: "금융 및 재테크 필수 계산기 (CAGR, ROI, 연봉, 대출, 적금, 부가세 등)",
+            link: "https://labmate.kr/",
+            promotionText: "재테크나 업무 볼 때 계산 필요한 거 있으면 여기 써보세요. 복리, 대출, 연봉 계산기 등 금융 관련 계산기가 다 있어서 유용해요."
+        },
+        // LabMate - Health
+        {
+            name: "LabMate - Health",
+            keywords: [
+                "BMI 계산", "비만도 계산", "기초대사량 계산", "BMR 계산", "TDEE 계산", "체지방률 계산",
+                "1RM 계산", "최대 중량 계산", "심박수 구간", "임신 예정일", "출산 예정일", "물 섭취량",
+                "탄단지 비율", "매크로 영양소", "수면 주기", "기상 시간", "혈중알코올농도", "술 해독 시간"
+            ],
+            description: "건강 관리 및 운동용 계산기 (BMI, BMR, 체지방, 1RM, 영양소 등)",
+            link: "https://labmate.kr/",
+            promotionText: "건강 관리나 운동할 때 쓰기 딱 좋아요. BMI, 기초대사량, 1RM 같은 거 바로 계산해주니까 운동 계획 짤 때 도움 많이 돼요."
+        },
+        // LabMate - Korean
+        {
+            name: "LabMate - Korean",
+            keywords: [
+                "평수 계산", "아파트 평수", "금 시세 계산", "금 돈 계산", "고기 근 계산", "한 근 무게",
+                "쌀 계량", "쌀 한 컵 무게", "평", "돈", "근", "쌀"
+            ],
+            description: "한국 전통 단위 변환기 (평, 돈, 근, 쌀 계량 등)",
+            link: "https://labmate.kr/",
+            promotionText: "부동산이나 장볼 때 헷갈리는 단위들 있죠? 평수나 고기 근 무게 같은 거 바로 변환해주는 사이트인데 즐찾해두면 쏠쏠해요."
+        },
+        // LabMate - Mathematics
+        {
+            name: "LabMate - Mathematics",
+            keywords: [
+                "퍼센트 계산", "비율 계산", "증감률", "평균 계산", "최대공약수", "최소공배수", "피타고라스",
+                "빗변 길이", "삼각함수 계산", "sin cos tan", "원 넓이", "구 부피", "이차방정식 근", "근의 공식",
+                "유효숫자 계산", "순열 조합 계산", "팩토리얼", "수학"
+            ],
+            description: "수학 학습 및 공학용 계산기 (퍼센트, 평균, 방정식, 삼각함수 등)",
+            link: "https://labmate.kr/",
+            promotionText: "수학 숙제나 공부하다 막힐 때 여기 참고해보세요. 퍼센트, 방정식, 도형 계산 등 웬만한 수학 공식 다 있어서 공부할 때 편해요."
+        },
+        // LabMate - Physics
+        {
+            name: "LabMate - Physics",
+            keywords: [
+                "옴의 법칙", "전압 전류 저항", "운동 에너지", "속도 가속도", "등가속도 운동", "위치 에너지",
+                "파장 주파수", "전력 계산", "전기요금", "자유 낙하", "낙하 속도", "물리"
+            ],
+            description: "물리학습용 계산기 (옴의 법칙, 에너지, 속도, 파장, 전력 등)",
+            link: "https://labmate.kr/",
+            promotionText: "물리 문제 풀 때 공식 헷갈리면 여기 써보세요. 옴의 법칙이나 운동 에너지 같은 물리 공식들 쉽게 계산할 수 있어서 도움 돼요."
+        },
+        // LabMate - Statistics
+        {
+            name: "LabMate - Statistics",
+            keywords: [
+                "표준편차 계산", "분산 계산", "P-value 계산", "유의확률", "신뢰구간", "표본 크기", "설문조사 표본", "통계"
+            ],
+            description: "통계 분석용 계산기 (표준편차, P-value, 신뢰구간, 표본 크기 등)",
+            link: "https://labmate.kr/",
+            promotionText: "통계 과제나 분석할 때 쓰기 좋은 사이트예요. 표준편차나 P-value 같은 복잡한 통계 수치들 간편하게 계산해줘서 시간 아낄 수 있어요."
+        }
     ],
 
     // 검색 주기 (밀리초 단위, 기본 60초)
