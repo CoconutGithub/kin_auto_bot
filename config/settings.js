@@ -127,7 +127,7 @@ todo리스트 작성과 로그인 시, 매일매일 얼만큼 집중하고 todo�
             keywords: [
                 "CAGR 계산", "연평균 성장률", "ROI 계산", "투자 수익률", "복리 계산", "예적금 계산", "부가세 계산",
                 "VAT 계산", "대출 상환 계산", "월 상환액", "저축 목표", "실수령액 계산", "연봉 실수령액", "시급 계산",
-                "퇴직금 계산", "물가 상승률 계산", "화폐 가치 계산", "카드 리볼빙 계산", "손익분기점", "투자 수익", "투자", "손익"
+                "물가 상승률 계산", "화폐 가치 계산", "카드 리볼빙 계산", "손익분기점", "투자 수익", "투자", "손익"
             ],
             description: "금융 및 재테크 필수 계산기 (CAGR, ROI, 연봉, 대출, 적금, 부가세 등)",
             link: "https://labmate.kr/",
@@ -195,9 +195,9 @@ todo리스트 작성과 로그인 시, 매일매일 얼만큼 집중하고 todo�
     searchInterval: 60 * 1000,
 
     // AI 모델 설정
-    aiModel: "gemini-2.5-flash",//gemini-3-flash, gemini-2.5-flash
+    aiModel: "gemini-3-flash-preview",//gemini-3-flash-preview, , gemini-2.5-flash
 
-    // 최대 답변 길이 등
+    // 최대 답변 길이 등y
     maxAnswerLength: 500,
 
     // 아이디 비공개 설정 여부
